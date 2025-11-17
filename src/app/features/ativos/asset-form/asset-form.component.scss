@@ -1,0 +1,163 @@
+.form-container {
+    max-width: 800px;
+    margin: var(--spacing-2xl) auto;
+    padding: var(--spacing-lg);
+    background-color: var(--secondary-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    color: var(--primary-text);
+  
+    h1 {
+      font-size: 24px;
+      margin-bottom: var(--spacing-xl);
+      color: var(--primary-text);
+      text-align: center;
+    }
+  
+    .form-section {
+      margin-bottom: var(--spacing-xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+  
+      h2 {
+        font-size: 18px;
+        color: var(--accent-blue);
+        margin-bottom: var(--spacing-lg);
+        border-bottom: 2px solid var(--accent-blue);
+        padding-bottom: var(--spacing-sm);
+      }
+    }
+  
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-md);
+  
+      .full-width {
+        grid-column: 1 / -1;
+      }
+    }
+  
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: var(--spacing-sm);
+  
+      label {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: var(--spacing-xs);
+        color: var(--secondary-text);
+      }
+  
+      input[type="text"],
+      input[type="date"],
+      textarea,
+      select {
+        padding: var(--spacing-sm);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background-color: var(--tertiary-bg);
+        color: var(--primary-text);
+        font-size: 16px;
+        transition: border-color 0.2s ease;
+  
+        &:focus {
+          outline: none;
+          border-color: var(--accent-blue);
+        }
+      }
+  
+      textarea {
+        resize: vertical;
+      }
+    }
+  
+    .spec-input-group, .maintenance-input-group {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+      flex-wrap: wrap; // Permite quebrar linha em telas menores
+  
+      input {
+        flex: 1;
+        min-width: 120px;
+        padding: var(--spacing-sm);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background-color: var(--tertiary-bg);
+        color: var(--primary-text);
+        font-size: 14px;
+      }
+  
+      .btn-secondary {
+        flex-shrink: 0;
+      }
+    }
+  
+    .spec-list, .maintenance-list {
+      background-color: var(--tertiary-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-sm);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  
+    .spec-item, .maintenance-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-bottom: 1px dashed var(--border-color);
+      &:last-child { border-bottom: none; }
+  
+      span {
+        color: var(--primary-text);
+        font-size: 14px;
+      }
+      .btn-remove {
+        background-color: var(--error-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        transition: background-color 0.2s ease;
+        &:hover {
+          background-color: #C71A25;
+        }
+      }
+    }
+    .no-items {
+      color: var(--secondary-text);
+      font-style: italic;
+      text-align: center;
+      padding: var(--spacing-md);
+    }
+  
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-xl);
+    }
+  
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .spec-input-group, .maintenance-input-group {
+        flex-direction: column;
+        input { min-width: unset; }
+        button { width: 100%; }
+      }
+    }
+  }
+  

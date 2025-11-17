@@ -1,0 +1,503 @@
+<div class="ativos-wrapper" role="main">
+  <!-- Header da tela de Ativos -->
+  <header class="ativos-header">
+    <div class="header-content">
+      <div class="page-info">
+        <h1 class="page-title">Ativos</h1>
+        <p class="page-subtitle">Gerenciamento de patrimônio e equipamentos</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" 
+                aria-label="Importar ativos"
+                (click)="importAssets()" 
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+          </svg>
+          Importar
+        </button>
+        <button class="btn btn-primary" 
+                aria-label="Cadastrar novo ativo"
+                (click)="createNewAsset()" 
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+          </svg>
+          Novo Ativo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filtros e Busca -->
+  <section class="search-section" aria-labelledby="search-title">
+    <div class="section-card">
+      <header class="card-header">
+        <div class="header-left">
+          <h2 id="search-title" class="card-title">Busca e Filtros</h2>
+          <p class="card-subtitle">Encontre ativos específicos</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-button" 
+                  aria-label="Filtros avançados"
+                  (click)="toggleAdvancedFilters()" 
+                  tabindex="0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+      
+      <div class="search-content">
+        <div class="search-bar">
+          <div class="search-input-wrapper">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="search-icon">
+              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+            </svg>
+            <input type="text" 
+                   class="search-input"
+                   placeholder="Buscar por nome, patrimônio ou tipo..."
+                   [(ngModel)]="searchTerm"
+                   (input)="onSearchChange()"
+                   aria-label="Campo de busca de ativos">
+            <button class="search-clear" 
+                    *ngIf="searchTerm"
+                    (click)="clearSearch()"
+                    aria-label="Limpar busca">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="quick-filters">
+          <button class="filter-chip" 
+                  [class.active]="selectedCategory === 'all'"
+                  (click)="setCategory('all')"
+                  aria-label="Todos os ativos">
+            Todos
+            <span class="chip-count">{{ getTotalCount() }}</span>
+          </button>
+          <button class="filter-chip" 
+                  [class.active]="selectedCategory === 'computers'"
+                  (click)="setCategory('computers')"
+                  aria-label="Computadores">
+            Computadores
+            <span class="chip-count">{{ getCategoryCount('computers') }}</span>
+          </button>
+          <button class="filter-chip" 
+                  [class.active]="selectedCategory === 'printers'"
+                  (click)="setCategory('printers')"
+                  aria-label="Impressoras">
+            Impressoras
+            <span class="chip-count">{{ getCategoryCount('printers') }}</span>
+          </button>
+          <button class="filter-chip" 
+                  [class.active]="selectedCategory === 'monitors'"
+                  (click)="setCategory('monitors')"
+                  aria-label="Monitores">
+            Monitores
+            <span class="chip-count">{{ getCategoryCount('monitors') }}</span>
+          </button>
+          <button class="filter-chip" 
+                  [class.active]="selectedCategory === 'accessories'"
+                  (click)="setCategory('accessories')"
+                  aria-label="Acessórios">
+            Acessórios
+            <span class="chip-count">{{ getCategoryCount('accessories') }}</span>
+          </button>
+        </div>
+        
+        <div class="advanced-filters" *ngIf="showAdvancedFilters" [@slideDown]>
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label for="status-filter" class="filter-label">Status</label>
+              <select id="status-filter" 
+                      class="filter-select" 
+                      [(ngModel)]="selectedStatus"
+                      (change)="onFiltersChange()">
+                <option value="all">Todos</option>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+                <option value="maintenance">Manutenção</option>
+                <option value="retired">Aposentado</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="location-filter" class="filter-label">Localização</label>
+              <select id="location-filter" 
+                      class="filter-select" 
+                      [(ngModel)]="selectedLocation"
+                      (change)="onFiltersChange()">
+                <option value="all">Todas</option>
+                <option value="ti">TI</option>
+                <option value="rh">RH</option>
+                <option value="financeiro">Financeiro</option>
+                <option value="operacoes">Operações</option>
+                <option value="almoxarifado">Almoxarifado</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="responsible-filter" class="filter-label">Responsável</label>
+              <select id="responsible-filter" 
+                      class="filter-select" 
+                      [(ngModel)]="selectedResponsible"
+                      (change)="onFiltersChange()">
+                <option value="all">Todos</option>
+                <option value="ana-silva">Ana Silva</option>
+                <option value="joao-carlos">João Carlos</option>
+                <option value="maria-santos">Maria Santos</option>
+                <option value="pedro-oliveira">Pedro Oliveira</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conteúdo Principal -->
+  <div class="ativos-content">
+    <!-- Lista de Ativos -->
+    <section class="assets-section" aria-labelledby="assets-list-title">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="assets-list-title" class="card-title">Lista de Ativos</h2>
+            <p class="card-subtitle">{{ filteredAssets.length }} ativos encontrados</p>
+          </div>
+          <div class="header-actions">
+            <div class="view-options">
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'list'"
+                      (click)="setViewMode('list')"
+                      aria-label="Visualização em lista"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,5H21V7H3V5M3,11H21V13H3V11M3,17H21V19H3V17Z"/>
+                </svg>
+              </button>
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'grid'"
+                      (click)="setViewMode('grid')"
+                      aria-label="Visualização em grade"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3"/>
+                </svg>
+              </button>
+            </div>
+            <button class="action-button" 
+                    aria-label="Exportar lista"
+                    (click)="exportAssets()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        
+        <div class="assets-container" [class]="'view-' + viewMode">
+          <div class="assets-list" *ngIf="filteredAssets.length > 0; else noAssets">
+            <article class="asset-card" 
+                     *ngFor="let asset of filteredAssets; trackBy: trackAsset"
+                     tabindex="0"
+                     [attr.aria-label]="getAssetAriaLabel(asset)"
+                     (click)="selectAsset(asset)"
+                     (keydown.enter)="selectAsset(asset)"
+                     (keydown.space)="selectAsset(asset)"
+                     [class.selected]="selectedAsset?.id === asset.id"
+                     role="button">
+              
+              <!-- Ícone do tipo de ativo -->
+              <div class="asset-icon" [class]="'icon-' + asset.category">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                  <path [attr.d]="getAssetIcon(asset.category)"/>
+                </svg>
+              </div>
+              
+              <!-- Conteúdo do ativo -->
+              <div class="asset-content">
+                <div class="asset-header">
+                  <h3 class="asset-name">{{ asset.name }}</h3>
+                  <span class="asset-patrimony">#{{ asset.patrimony }}</span>
+                </div>
+                
+                <div class="asset-details" *ngIf="viewMode === 'list'">
+                  <div class="detail-row">
+                    <span class="detail-label">Tipo:</span>
+                    <span class="detail-value">{{ asset.type }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Localização:</span>
+                    <span class="detail-value">{{ asset.location }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Responsável:</span>
+                    <span class="detail-value">{{ asset.responsible }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Última Manutenção:</span>
+                    <span class="detail-value">{{ asset.lastMaintenance | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </div>
+                
+                <p class="asset-description" *ngIf="viewMode === 'grid'">
+                  {{ asset.description }}
+                </p>
+              </div>
+              
+              <!-- Status e ações -->
+              <div class="asset-footer">
+                <div class="asset-status">
+                  <span class="status-badge" 
+                        [class]="'status-' + asset.status.toLowerCase()"
+                        [attr.aria-label]="'Status: ' + asset.status">
+                    <span class="status-indicator"></span>
+                    {{ asset.status }}
+                  </span>
+                </div>
+                
+                <div class="asset-actions">
+                  <button class="action-btn" 
+                          [attr.aria-label]="'Editar ativo ' + asset.name"
+                          (click)="$event.stopPropagation(); editAsset(asset)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                    </svg>
+                  </button>
+                  <button class="action-btn" 
+                          [attr.aria-label]="'Mais opções para ativo ' + asset.name"
+                          (click)="$event.stopPropagation(); openAssetMenu(asset)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+          
+          <!-- Estado vazio -->
+          <ng-template #noAssets>
+            <div class="empty-state" role="status" aria-label="Nenhum ativo encontrado">
+              <div class="empty-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17Z"/>
+                </svg>
+              </div>
+              <h3 class="empty-title">Nenhum ativo encontrado</h3>
+              <p class="empty-description">
+                Não há ativos que correspondam aos filtros aplicados.
+                Tente ajustar os parâmetros de busca.
+              </p>
+              <button class="btn btn-primary" (click)="clearAllFilters()">
+                Limpar Filtros
+              </button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalhes do Ativo Selecionado -->
+    <aside class="details-section" aria-labelledby="details-title" *ngIf="selectedAsset">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="details-title" class="card-title">Detalhes do Ativo</h2>
+            <p class="card-subtitle">{{ selectedAsset.name }}</p>
+          </div>
+          <div class="header-actions">
+            <button class="action-button" 
+                    aria-label="Fechar detalhes"
+                    (click)="closeDetails()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        
+        <div class="details-content">
+          <!-- Informações básicas -->
+          <div class="info-section">
+            <h3 class="section-title">Informações Básicas</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Patrimônio:</span>
+                <span class="info-value">#{{ selectedAsset.patrimony }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Tipo:</span>
+                <span class="info-value">{{ selectedAsset.type }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Categoria:</span>
+                <span class="info-value">{{ getCategoryLabel(selectedAsset.category) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="status-badge" 
+                      [class]="'status-' + selectedAsset.status.toLowerCase()">
+                  <span class="status-indicator"></span>
+                  {{ selectedAsset.status }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Localização:</span>
+                <span class="info-value">{{ selectedAsset.location }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Responsável:</span>
+                <span class="info-value">{{ selectedAsset.responsible }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Especificações técnicas -->
+          <div class="specs-section" *ngIf="selectedAsset.specifications">
+            <h3 class="section-title">Especificações Técnicas</h3>
+            <div class="specs-grid">
+              <div class="spec-item" *ngFor="let spec of getSpecifications(selectedAsset.specifications)">
+                <span class="spec-label">{{ spec.label }}:</span>
+                <span class="spec-value">{{ spec.value }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Histórico de manutenções -->
+          <div class="maintenance-section">
+            <h3 class="section-title">Histórico de Manutenções</h3>
+            <div class="maintenance-list" *ngIf="selectedAsset?.maintenanceHistory?.length; else noMaintenance">
+              <div class="maintenance-item" *ngFor="let maintenance of selectedAsset?.maintenanceHistory; trackBy: trackMaintenance">
+                <div class="maintenance-date">
+                  {{ maintenance.date | date:'dd/MM/yyyy' }}
+                </div>
+                <div class="maintenance-content">
+                  <h4 class="maintenance-title">{{ maintenance.type }}</h4>
+                  <p class="maintenance-description">{{ maintenance.description }}</p>
+                  <span class="maintenance-technician">Por: {{ maintenance.technician }}</span>
+                </div>
+              </div>
+            </div>
+            <ng-template #noMaintenance>
+              <p class="no-maintenance">Nenhuma manutenção registrada</p>
+            </ng-template>
+          </div>
+          
+          <!-- Ações do ativo -->
+          <div class="asset-actions-section">
+            <h3 class="section-title">Ações</h3>
+            <div class="actions-grid">
+              <button class="action-card" 
+                      (click)="assignAsset(selectedAsset)"
+                      aria-label="Atribuir ativo">
+                <div class="action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                  </svg>
+                </div>
+                <div class="action-info">
+                  <span class="action-title">Atribuir</span>
+                  <span class="action-description">Designar responsável</span>
+                </div>
+              </button>
+              
+              <button class="action-card" 
+                      (click)="scheduleMaintenance(selectedAsset)"
+                      aria-label="Agendar manutenção">
+                <div class="action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/>
+                  </svg>
+                </div>
+                <div class="action-info">
+                  <span class="action-title">Manutenção</span>
+                  <span class="action-description">Agendar serviço</span>
+                </div>
+              </button>
+              
+              <button class="action-card" 
+                      (click)="changeStatus(selectedAsset)"
+                      aria-label="Alterar status">
+                <div class="action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                  </svg>
+                </div>
+                <div class="action-info">
+                  <span class="action-title">Status</span>
+                  <span class="action-description">Alterar estado</span>
+                </div>
+              </button>
+              
+              <button class="action-card" 
+                      (click)="generateReport(selectedAsset)"
+                      aria-label="Gerar relatório">
+                <div class="action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                  </svg>
+                </div>
+                <div class="action-info">
+                  <span class="action-title">Relatório</span>
+                  <span class="action-description">Gerar documento</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Placeholder quando nenhum ativo está selecionado -->
+    <aside class="details-placeholder" *ngIf="!selectedAsset" role="complementary">
+      <div class="placeholder-content">
+        <div class="placeholder-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17Z"/>
+          </svg>
+        </div>
+        <h3 class="placeholder-title">Selecione um Ativo</h3>
+        <p class="placeholder-description">
+          Escolha um ativo da lista para visualizar detalhes, histórico e realizar ações.
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Toast de notificações -->
+  <div class="toast-container" aria-live="polite" aria-atomic="true">
+    <div class="toast" 
+         *ngIf="toastMessage" 
+         [class]="'toast-' + toastType"
+         role="alert">
+      <div class="toast-content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'success'">
+          <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'error'">
+          <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z"/>
+        </svg>
+        <span>{{ toastMessage }}</span>
+      </div>
+      <button class="toast-close" 
+              (click)="closeToast()" 
+              aria-label="Fechar notificação">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Screen Reader Only -->
+<div class="sr-only" aria-live="polite" id="status-announcements"></div>

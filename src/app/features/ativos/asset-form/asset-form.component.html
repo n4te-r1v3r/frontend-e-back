@@ -1,0 +1,101 @@
+<div class="form-container">
+    <h1>Cadastrar Novo Ativo</h1>
+    <form (ngSubmit)="onSubmit()">
+      <section class="form-section">
+        <h2>Informações Básicas</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Nome do Ativo</label>
+            <input id="name" type="text" [(ngModel)]="newAsset.name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="patrimony">Patrimônio</label>
+            <input id="patrimony" type="text" [(ngModel)]="newAsset.patrimony" name="patrimony" required mask="000"> <!-- Exemplo de máscara -->
+          </div>
+          <div class="form-group">
+            <label for="serialNumber">Número de Série</label>
+            <input id="serialNumber" type="text" [(ngModel)]="newAsset.serialNumber" name="serialNumber" required>
+          </div>
+          <div class="form-group">
+            <label for="type">Tipo</label>
+            <input id="type" type="text" [(ngModel)]="newAsset.type" name="type" required>
+          </div>
+          <div class="form-group">
+            <label for="category">Categoria</label>
+            <select id="category" [(ngModel)]="newAsset.category" name="category" required>
+              <option value="computers">Computadores</option>
+              <option value="printers">Impressoras</option>
+              <option value="monitors">Monitores</option>
+              <option value="accessories">Acessórios</option>
+              <option value="other">Outros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" [(ngModel)]="newAsset.status" name="status" required>
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+              <option value="Manutenção">Manutenção</option>
+              <option value="Aposentado">Aposentado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="location">Localização</label>
+            <input id="location" type="text" [(ngModel)]="newAsset.location" name="location" required>
+          </div>
+          <div class="form-group">
+            <label for="responsible">Responsável</label>
+            <input id="responsible" type="text" [(ngModel)]="newAsset.responsible" name="responsible" required>
+          </div>
+          <div class="form-group full-width">
+            <label for="description">Descrição</label>
+            <textarea id="description" [(ngModel)]="newAsset.description" name="description" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="lastMaintenance">Última Manutenção (opcional)</label>
+            <input id="lastMaintenance" type="date" [(ngModel)]="newAsset.lastMaintenance" name="lastMaintenance">
+          </div>
+        </div>
+      </section>
+  
+      <section class="form-section">
+        <h2>Especificações Técnicas (Opcional)</h2>
+        <div class="spec-input-group">
+          <input type="text" placeholder="Chave (Ex: Processador)" [(ngModel)]="currentSpecKey" name="currentSpecKey">
+          <input type="text" placeholder="Valor (Ex: Intel i7)" [(ngModel)]="currentSpecValue" name="currentSpecValue">
+          <button type="button" class="btn btn-secondary" (click)="addSpecification()">Adicionar</button>
+        </div>
+        <div class="spec-list" *ngIf="newAsset.specifications && getSpecificationsArray(newAsset.specifications).length > 0">
+          <div class="spec-item" *ngFor="let spec of getSpecificationsArray(newAsset.specifications)">
+            <span>{{ spec.key }}: {{ spec.value }}</span>
+            <button type="button" (click)="removeSpecification(spec.key)" class="btn-remove">X</button>
+          </div>
+        </div>
+        <p *ngIf="!newAsset.specifications || getSpecificationsArray(newAsset.specifications).length === 0" class="no-items">Nenhuma especificação adicionada.</p>
+      </section>
+  
+      <section class="form-section">
+        <h2>Histórico de Manutenção (Opcional)</h2>
+        <div class="maintenance-input-group">
+          <input type="date" [(ngModel)]="newMaintenanceRecord.date" name="maintenanceDate">
+          <input type="text" placeholder="Tipo (Ex: Preventiva)" [(ngModel)]="newMaintenanceRecord.type" name="maintenanceType">
+          <input type="text" placeholder="Descrição" [(ngModel)]="newMaintenanceRecord.description" name="maintenanceDescription">
+          <input type="text" placeholder="Técnico" [(ngModel)]="newMaintenanceRecord.technician" name="maintenanceTechnician">
+          <button type="button" class="btn btn-secondary" (click)="addMaintenance()">Adicionar</button>
+        </div>
+        <div class="maintenance-list" *ngIf="newAsset.maintenanceHistory && newAsset.maintenanceHistory.length > 0">
+          <div class="maintenance-item" *ngFor="let maint of newAsset.maintenanceHistory; let i = index">
+            <span>{{ maint.date | date:'dd/MM/yyyy' }} - {{ maint.type }} por {{ maint.technician }}</span>
+            <button type="button" (click)="removeMaintenance(i)" class="btn-remove">X</button>
+          </div>
+        </div>
+        <p *ngIf="!newAsset.maintenanceHistory || newAsset.maintenanceHistory.length === 0" class="no-items">Nenhum registro de manutenção.</p>
+      </section>
+  
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/ativos'])">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Ativo</button>
+      </div>
+    </form>
+  </div>
+  

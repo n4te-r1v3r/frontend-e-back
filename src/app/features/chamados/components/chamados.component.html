@@ -1,0 +1,304 @@
+<div class="chamados-wrapper" role="main">
+  <!-- Header da tela de Chamados -->
+  <header class="chamados-header">
+    <div class="header-content">
+      <div class="page-info">
+        <h1 class="page-title">Chamados</h1>
+        <p class="page-subtitle">Gerenciamento de tickets e solicitações</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" 
+                aria-label="Filtrar chamados"
+                (click)="openFilters()" 
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
+          </svg>
+          Filtros
+        </button>
+        <button class="btn btn-primary" 
+                aria-label="Criar novo chamado"
+                (click)="createNewTicket()" 
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+          </svg>
+          Novo Chamado
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo principal -->
+  <div class="chamados-content">
+    <!-- Lista de Chamados -->
+    <section class="tickets-section" aria-labelledby="tickets-list-title">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="tickets-list-title" class="card-title">Lista de Chamados</h2>
+            <p class="card-subtitle">{{ tickets.length }} chamados encontrados</p>
+          </div>
+          <div class="header-actions">
+            <div class="view-options">
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'list'"
+                      (click)="setViewMode('list')"
+                      aria-label="Visualização em lista"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,5H21V7H3V5M3,11H21V13H3V11M3,17H21V19H3V17Z"/>
+                </svg>
+              </button>
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'grid'"
+                      (click)="setViewMode('grid')"
+                      aria-label="Visualização em grade"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </header>
+        
+        <div class="tickets-container" [class]="'view-' + viewMode">
+          <div class="tickets-list" role="list" *ngIf="tickets.length > 0; else noTickets">
+            <article class="ticket-card" 
+                     *ngFor="let ticket of tickets; trackBy: trackTicket"
+                     role="listitem"
+                     tabindex="0"
+                     [attr.aria-label]="'Chamado ' + ticket.id + ': ' + ticket.title + '. Prioridade: ' + ticket.priority + '. Status: ' + ticket.status"
+                     (click)="selectTicket(ticket)"
+                     (keydown.enter)="selectTicket(ticket)"
+                     (keydown.space)="selectTicket(ticket)"
+                     [class.selected]="selectedTicket?.id === ticket.id">
+              
+              <!-- Indicador de prioridade -->
+              <div class="priority-indicator" 
+                   [class]="'priority-' + ticket.priority.toLowerCase()"
+                   [attr.aria-label]="'Prioridade ' + ticket.priority">
+              </div>
+              
+              <!-- Conteúdo do ticket -->
+              <div class="ticket-content">
+                <div class="ticket-header">
+                  <h3 class="ticket-title">{{ ticket.title }}</h3>
+                  <div class="ticket-meta">
+                    <span class="ticket-id">#{{ ticket.id }}</span>
+                    <span class="ticket-separator" aria-hidden="true">•</span>
+                    <span class="ticket-date">{{ ticket.createdAt | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </div>
+                
+                <p class="ticket-description">{{ ticket.description }}</p>
+                
+                <div class="ticket-details">
+                  <div class="detail-item">
+                    <span class="detail-label">Equipamento:</span>
+                    <span class="detail-value">{{ ticket.equipment }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Solicitante:</span>
+                    <span class="detail-value">{{ ticket.requester }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Última modificação:</span>
+                    <span class="detail-value">{{ ticket.lastModified | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Status e ações -->
+              <div class="ticket-footer">
+                <div class="ticket-badges">
+                  <span class="priority-badge" 
+                        [class]="'badge-' + ticket.priority.toLowerCase()"
+                        [attr.aria-label]="'Prioridade ' + ticket.priority">
+                    {{ ticket.priority }}
+                  </span>
+                  <span class="status-badge" 
+                        [class]="'status-' + ticket.status.toLowerCase().replace(' ', '-')"
+                        [attr.aria-label]="'Status ' + ticket.status">
+                    {{ ticket.status }}
+                  </span>
+                </div>
+                
+                <div class="ticket-actions">
+                  <button class="action-btn" 
+                          [attr.aria-label]="'Editar chamado ' + ticket.id"
+                          (click)="$event.stopPropagation(); editTicket(ticket)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                    </svg>
+                  </button>
+                  <button class="action-btn" 
+                          [attr.aria-label]="'Mais opções para chamado ' + ticket.id"
+                          (click)="$event.stopPropagation(); openTicketMenu(ticket)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+          
+          <!-- Estado vazio -->
+          <ng-template #noTickets>
+            <div class="empty-state" role="status" aria-label="Nenhum chamado encontrado">
+              <div class="empty-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/>
+                </svg>
+              </div>
+              <h3 class="empty-title">Nenhum chamado encontrado</h3>
+              <p class="empty-description">Não há chamados que correspondam aos filtros aplicados.</p>
+              <button class="btn btn-primary" (click)="clearFilters()">
+                Limpar Filtros
+              </button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção do QR Code -->
+    <aside class="qr-section" aria-labelledby="qr-section-title" *ngIf="selectedTicket">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="qr-section-title" class="card-title">QR Code do Chamado</h2>
+            <p class="card-subtitle">{{ selectedTicket.title }}</p>
+          </div>
+          <div class="header-actions">
+            <button class="action-button" 
+                    aria-label="Regenerar QR Code"
+                    (click)="regenerateQRCode()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        
+        <div class="qr-container">
+          <!-- QR Code Display -->
+          <div class="qr-display" role="img" [attr.aria-label]="'QR Code para o chamado ' + selectedTicket.id">
+            <div class="qr-wrapper">
+              <canvas #qrCanvas 
+                      class="qr-canvas"
+                      [attr.aria-label]="'QR Code contendo informações do chamado ' + selectedTicket.id">
+              </canvas>
+              <div class="qr-loading" *ngIf="isGeneratingQR" aria-live="polite">
+                <div class="loading-spinner"></div>
+                <span>Gerando QR Code...</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Informações do QR Code -->
+          <div class="qr-info">
+            <h3 class="qr-info-title">Informações Codificadas</h3>
+            <div class="qr-data">
+              <div class="data-item">
+                <span class="data-label">ID do Chamado:</span>
+                <span class="data-value">#{{ selectedTicket.id }}</span>
+              </div>
+              <div class="data-item">
+                <span class="data-label">Equipamento:</span>
+                <span class="data-value">{{ selectedTicket.equipment }}</span>
+              </div>
+              <div class="data-item">
+                <span class="data-label">Data de Modificação:</span>
+                <span class="data-value">{{ selectedTicket.lastModified | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="data-item">
+                <span class="data-label">Última Alteração:</span>
+                <span class="data-value">{{ selectedTicket.lastChange }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Ações do QR Code -->
+          <div class="qr-actions">
+            <button class="btn btn-primary" 
+                    aria-label="Imprimir QR Code"
+                    (click)="printQRCode()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z"/>
+              </svg>
+              Imprimir
+            </button>
+            
+            <button class="btn btn-secondary" 
+                    aria-label="Baixar QR Code como imagem"
+                    (click)="downloadQRCode()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+              </svg>
+              Baixar Etiqueta
+            </button>
+            
+            <button class="btn btn-ghost" 
+                    aria-label="Copiar dados do QR Code"
+                    (click)="copyQRData()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/>
+              </svg>
+              Copiar Dados
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Placeholder quando nenhum chamado está selecionado -->
+    <aside class="qr-placeholder" *ngIf="!selectedTicket" role="complementary">
+      <div class="placeholder-content">
+        <div class="placeholder-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3,11H5V13H3V11M11,5H13V9H11V5M9,11H13V15H9V11M15,11H17V13H15V11M19,5H21V9H19V5M5,5H9V9H5V5M3,19H5V21H3V19M9,19H13V21H9V19M15,19H17V21H15V19M19,15H21V19H19V15M19,11H21V13H19V11M3,15H5V17H3V15M5,11H7V13H5V11"/>
+          </svg>
+        </div>
+        <h3 class="placeholder-title">Selecione um Chamado</h3>
+        <p class="placeholder-description">
+          Escolha um chamado da lista para visualizar e gerar o QR Code correspondente.
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Toast de notificações -->
+  <div class="toast-container" aria-live="polite" aria-atomic="true">
+    <div class="toast" 
+         *ngIf="toastMessage" 
+         [class]="'toast-' + toastType"
+         role="alert">
+      <div class="toast-content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'success'">
+          <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'error'">
+          <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z"/>
+        </svg>
+        <span>{{ toastMessage }}</span>
+      </div>
+      <button class="toast-close" 
+              (click)="closeToast()" 
+              aria-label="Fechar notificação">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Screen Reader Only -->
+<div class="sr-only" aria-live="polite" id="status-announcements"></div>

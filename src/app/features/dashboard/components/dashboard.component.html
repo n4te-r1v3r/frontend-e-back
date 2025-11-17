@@ -1,0 +1,324 @@
+<div class="dashboard-wrapper" role="main">
+  <!-- NOVO: Indicador de carregamento completo da Dashboard -->
+  <div *ngIf="isLoadingDashboard" class="loading-overlay">
+    <div class="spinner"></div>
+    <p class="loading-text">Carregando Dashboard...</p>
+  </div>
+  <!-- FIM DO NOVO -->
+
+  <!-- Conteúdo da Dashboard visível apenas quando não estiver carregando -->
+  <ng-container *ngIf="!isLoadingDashboard">
+    <!-- Header da Dashboard com usuário ativo -->
+    <header class="dashboard-header">
+      <div class="header-content">
+        <div class="page-info">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">Visão geral do sistema</p>
+        </div>
+        <div class="user-info" role="banner" [attr.aria-label]="'Informações do usuário ativo: ' + (currentUser?.name || 'Carregando...')">
+          <div class="user-avatar" aria-hidden="true">
+            <span class="avatar-initials">{{ getUserInitials() }}</span>
+          </div>
+          <div class="user-details" *ngIf="currentUser; else loadingUserDetails">
+            <span class="user-name">{{ currentUser.name }}</span>
+            <span class="user-role">{{ currentUser.role }}</span>
+          </div>
+          <ng-template #loadingUserDetails>
+            <div class="user-details">
+              <span class="user-name">Carregando...</span>
+              <span class="user-role">...</span>
+            </div>
+          </ng-template>
+          <!-- -- FIM DA CORREÇÃO -- -->
+          <div class="user-status" [attr.aria-label]="'Status: ' + (isUserOnline ? 'Online' : 'Offline')">
+            <span class="status-indicator" [class.online]="isUserOnline" [class.offline]="!isUserOnline"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Grid de Métricas -->
+    <section class="metrics-section" aria-labelledby="metrics-title">
+      <h2 id="metrics-title" class="sr-only">Métricas do sistema</h2>
+      <div class="metrics-grid">
+        <article class="metric-card" tabindex="0" role="button"
+                 [attr.aria-label]="'Total de Assets: ' + totalAssets + '. Aumento de 12% este mês'"
+                 (click)="navigateToAssets()" (keydown.enter)="navigateToAssets()" (keydown.space)="navigateToAssets()">
+          <div class="metric-icon assets-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4,6H20V16H4M20,18A2,2 0 0,0 22,16V6C22,4.89 21.1,4 20,4H4C2.89,4 2,4.89 2,6V16A2,2 0 0,0 4,18H0V20H24V18H20Z"/>
+            </svg>
+          </div>
+          <div class="metric-content">
+            <span class="metric-value" [attr.aria-label]="'Total de Assets: ' + totalAssets">{{ totalAssets }}</span>
+            <span class="metric-label">Total de Assets</span>
+            <div class="metric-trend positive" aria-label="Tendência positiva">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15,20H9V12H4.16L12,4.16L19.84,12H15V20Z"/>
+              </svg>
+              <span>+12% este mês</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="metric-card" tabindex="0" role="button"
+                 [attr.aria-label]="'Tickets Ativos: ' + activeTickets + '. Redução de 5% esta semana'"
+                 (click)="navigateToTickets()" (keydown.enter)="navigateToTickets()" (keydown.space)="navigateToTickets()">
+          <div class="metric-icon tickets-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"/>
+            </svg>
+          </div>
+          <div class="metric-content">
+            <span class="metric-value" [attr.aria-label]="'Tickets Ativos: ' + activeTickets">{{ activeTickets }}</span>
+            <span class="metric-label">Tickets Ativos</span>
+            <div class="metric-trend negative" aria-label="Tendência negativa">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9,4H15V12H19.84L12,19.84L4.16,12H9V4Z"/>
+              </svg>
+              <span>-5% esta semana</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="metric-card" tabindex="0" role="button"
+                 [attr.aria-label]="'Usuários Ativos: ' + activeUsers + '. Aumento de 8% este mês'">
+          <div class="metric-icon users-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14Z"/>
+            </svg>
+          </div>
+          <div class="metric-content">
+            <span class="metric-value" [attr.aria-label]="'Usuários Ativos: ' + activeUsers">{{ activeUsers }}</span>
+            <span class="metric-label">Usuários Ativos</span>
+            <div class="metric-trend positive" aria-label="Tendência positiva">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15,20H9V12H4.16L12,4.16L19.84,12H15V20Z"/>
+              </svg>
+              <span>+8% este mês</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="metric-card" tabindex="0" role="button"
+                 aria-label="Uptime do sistema: 98.5%. Status estável">
+          <div class="metric-icon uptime-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/>
+            </svg>
+          </div>
+          <div class="metric-content">
+            <span class="metric-value">98.5%</span>
+            <span class="metric-label">Uptime</span>
+            <div class="metric-trend stable" aria-label="Status estável">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5,13H19V11H5V13Z"/>
+              </svg>
+              <span>Estável</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Seção Principal de Conteúdo -->
+    <div class="dashboard-content">
+      <!-- Gráfico de Atividade Redesenhado -->
+      <section class="chart-section" aria-labelledby="chart-title">
+        <div class="section-card">
+          <header class="card-header">
+            <div class="header-left">
+              <h2 id="chart-title" class="card-title">Atividade Recente</h2>
+              <p class="card-subtitle">Últimos 7 dias</p>
+            </div>
+            <div class="header-actions">
+              <button class="action-button" aria-label="Filtrar dados do gráfico"
+                      (click)="openChartFilters()" tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
+                </svg>
+              </button>
+              <button class="action-button" aria-label="Mais opções do gráfico"
+                      (click)="openChartOptions()" tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"/>
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="chart-container" role="img" aria-label="Gráfico de barras mostrando atividade dos últimos 7 dias">
+            <div class="chart-wrapper">
+              <div class="chart-bars" aria-hidden="true">
+                <div class="chart-bar"
+                     *ngFor="let data of chartData; let i = index"
+                     [style.height.%]="data.value"
+                     [attr.data-value]="data.label + ': ' + data.count"
+                     tabindex="0"
+                     [attr.aria-label]="data.label + ': ' + data.count + ' atividades'"
+                     (mouseenter)="showTooltip($event, data)"
+                     (mouseleave)="hideTooltip()">
+                     <div class="bar-fill" [style.height.%]="data.value" [class]="data.colorClass"></div>
+                </div>
+              </div>
+              <div class="chart-labels">
+                <span *ngFor="let data of chartData" class="chart-label">{{ data.label }}</span>
+              </div>
+            </div>
+
+            <!-- Tooltip -->
+            <div class="chart-tooltip" [class.visible]="tooltipVisible" [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+              <div class="tooltip-content">
+                <strong>{{ tooltipData?.label }}</strong>
+                <span>{{ tooltipData?.count }} atividades</span>
+              </div>
+            </div>
+            <p *ngIf="chartData.length === 0" class="no-data-message-chart">Nenhum dado de atividade recente.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Seção de Tickets Redesenhada -->
+      <section class="tickets-section" aria-labelledby="tickets-title">
+        <div class="section-card">
+          <header class="card-header">
+            <div class="header-left">
+              <h2 id="tickets-title" class="card-title">Tickets Recentes</h2>
+              <p class="card-subtitle">Últimas atualizações</p>
+            </div>
+            <div class="header-actions">
+              <a routerLink="/chamados" class="view-all-link" tabindex="0"
+                 aria-label="Ver todos os tickets">
+                Ver todos
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+              </a>
+            </div>
+          </header>
+
+          <div class="tickets-list" role="list">
+            <article class="ticket-item"
+                     *ngFor="let ticket of recentTickets; trackBy: trackTicket"
+                     role="listitem"
+                     tabindex="0"
+                     [attr.aria-label]="'Ticket: ' + ticket.title + '. Prioridade: ' + ticket.priority + '. Criado ' + ticket.timeAgo"
+                     (click)="openTicket(ticket.id)"
+                     (keydown.enter)="openTicket(ticket.id)"
+                     (keydown.space)="openTicket(ticket.id)">
+
+              <div class="ticket-priority"
+                   [class]="'priority-' + ticket.priority.toLowerCase()"
+                   [attr.aria-label]="'Prioridade ' + ticket.priority">
+              </div>
+
+              <div class="ticket-content">
+                <h3 class="ticket-title">{{ ticket.title }}</h3>
+                <div class="ticket-meta">
+                  <span class="ticket-time">{{ ticket.timeAgo }}</span>
+                  <span class="ticket-separator" aria-hidden="true">•</span>
+                  <span class="ticket-author">{{ ticket.author }}</span>
+                </div>
+              </div>
+
+              <div class="ticket-status">
+                <span class="priority-badge"
+                      [class]="'badge-' + ticket.priority.toLowerCase()"
+                      [attr.aria-label]="'Prioridade ' + ticket.priority">
+                  {{ ticket.priority }}
+                </span>
+              </div>
+
+              <button class="ticket-actions"
+                      [attr.aria-label]="'Ações para ticket: ' + ticket.title"
+                      (click)="$event.stopPropagation(); openTicketMenu(ticket.id)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"/>
+                </svg>
+              </button>
+            </article>
+            <p *ngIf="recentTickets.length === 0" class="no-data-message">Nenhum ticket recente encontrado.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Assets Recentes -->
+    <section class="assets-section" aria-labelledby="assets-title">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="assets-title" class="card-title">Assets Recentes</h2>
+            <p class="card-subtitle">Últimas atualizações</p>
+          </div>
+          <div class="header-actions">
+            <a routerLink="/ativos" class="view-all-link" tabindex="0"
+               aria-label="Ver todos os assets">
+              Ver todos
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+              </svg>
+            </a>
+          </div>
+        </header>
+
+        <div class="assets-table" role="table" aria-label="Tabela de assets recentes">
+          <div class="table-header" role="row">
+            <div class="table-cell header-cell" role="columnheader">Nome</div>
+            <div class="table-cell header-cell" role="columnheader">Tipo</div>
+            <div class="table-cell header-cell" role="columnheader">Status</div>
+            <div class="table-cell header-cell" role="columnheader">Última Atualização</div>
+            <div class="table-cell header-cell" role="columnheader">Ações</div>
+          </div>
+
+          <div class="table-row"
+               *ngFor="let asset of recentAssets; trackBy: trackAsset"
+               role="row"
+               tabindex="0"
+               [attr.aria-label]="'Asset: ' + asset.name + '. Tipo: ' + asset.type + '. Status: ' + asset.status"
+               (click)="openAsset(asset.id)"
+               (keydown.enter)="openAsset(asset.id)"
+               (keydown.space)="openAsset(asset.id)">
+
+            <div class="table-cell" role="gridcell">
+              <div class="asset-info">
+                <div class="asset-icon" [class]="'icon-' + asset.type.toLowerCase()" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path [attr.d]="getAssetIcon(asset.type)"/>
+                  </svg>
+                </div>
+                <span class="asset-name">{{ asset.name }}</span>
+              </div>
+            </div>
+
+            <div class="table-cell" role="gridcell">{{ asset.type }}</div>
+
+            <div class="table-cell" role="gridcell">
+              <span class="status-badge"
+                    [class]="'status-' + asset.status.toLowerCase()"
+                    [attr.aria-label]="'Status: ' + asset.status">
+                {{ asset.status }}
+              </span>
+            </div>
+
+            <div class="table-cell" role="gridcell">{{ asset.lastUpdate }}</div>
+
+            <div class="table-cell" role="gridcell">
+              <button class="action-button"
+                      [attr.aria-label]="'Ações para asset: ' + asset.name"
+                      (click)="$event.stopPropagation(); openAssetMenu(asset.id)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p *ngIf="recentAssets.length === 0" class="no-data-message">Nenhum ativo recente encontrado.</p>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>
+
+<!-- Screen Reader Only -->
+<div class="sr-only" aria-live="polite" id="status-announcements"></div>

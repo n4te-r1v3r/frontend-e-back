@@ -1,0 +1,133 @@
+<div class="forgot-password-wrapper" role="main">
+    <div class="forgot-password-container">
+      <!-- Header com Logo -->
+      <header class="forgot-password-header">
+        <div class="logo-section">
+      <img src="assets/logo.png" alt="Logo da empresa" class="logo-image">
+        </div>
+        <div class="content-section">
+          <h1 class="main-title">Recuperar senha</h1>
+          <p class="subtitle" *ngIf="!emailSent">
+            Digite seu e-mail para receber as instruções de recuperação de senha
+          </p>
+          <p class="subtitle" *ngIf="emailSent">
+            Instruções enviadas! Verifique sua caixa de entrada e spam
+          </p>
+        </div>
+      </header>
+  
+      <!-- Formulário ou Confirmação -->
+      <main class="forgot-password-main">
+        <!-- Formulário de Recuperação -->
+        <form class="forgot-password-form" (ngSubmit)="onSubmit()" novalidate *ngIf="!emailSent">
+          <fieldset class="form-fieldset">
+            <legend class="sr-only">Recuperação de senha</legend>
+            
+            <!-- Campo E-mail -->
+            <div class="form-group">
+              <label for="email" class="form-label">
+                E-mail cadastrado
+                <span class="required-indicator" aria-label="campo obrigatório">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email"
+                  class="form-input"
+                  [(ngModel)]="email" 
+                  placeholder="Digite o e-mail da sua conta"
+                  autocomplete="email"
+                  aria-describedby="email-error email-help"
+                  [class.error]="(!email || !isEmailValid()) && attempted || errorMessage"
+                  [disabled]="isLoading"
+                  required>
+                <div class="input-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                </div>
+              </div>
+              <div id="email-help" class="help-text">
+                Use o mesmo e-mail que você utilizou para criar sua conta
+              </div>
+              <div id="email-error" class="error-message" [class.visible]="(attempted && (!email || !isEmailValid())) || errorMessage">
+                {{ errorMessage || (attempted && (!email || !isEmailValid()) ? 'Digite um e-mail válido' : '') }}
+              </div>
+            </div>
+  
+            <!-- Botão de Envio -->
+            <button 
+              type="submit" 
+              class="submit-button"
+              [disabled]="!email || !isEmailValid() || isLoading"
+              [attr.aria-describedby]="(!email || !isEmailValid() || errorMessage) ? 'submit-button-help' : null">
+              <span class="button-content" *ngIf="!isLoading">
+                <svg class="button-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                </svg>
+                Enviar instruções
+              </span>
+              <span class="button-content" *ngIf="isLoading">
+                <svg class="loading-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                Enviando...
+              </span>
+            </button>
+            <div id="submit-button-help" class="sr-only">
+              Digite um e-mail válido para habilitar o envio
+            </div>
+          </fieldset>
+        </form>
+  
+        <!-- Confirmação de Envio -->
+        <div class="success-message" *ngIf="emailSent">
+          <div class="success-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+            </svg>
+          </div>
+          <h2 class="success-title">E-mail enviado com sucesso!</h2>
+          <div class="success-details">
+            <p>Enviamos as instruções para:</p>
+            <strong class="email-display">{{ email }}</strong>
+          </div>
+          <div class="next-steps">
+            <h3>Próximos passos:</h3>
+            <ol class="steps-list">
+              <li>Verifique sua caixa de entrada</li>
+              <li>Procure também na pasta de spam</li>
+              <li>Clique no link de recuperação</li>
+              <li>Crie uma nova senha</li>
+            </ol>
+          </div>
+          <button 
+            type="button" 
+            class="resend-button"
+            (click)="resendEmail()"
+            [disabled]="resendCooldown > 0">
+            <span *ngIf="resendCooldown === 0">Reenviar e-mail</span>
+            <span *ngIf="resendCooldown > 0">Reenviar em {{ resendCooldown }}s</span>
+          </button>
+        </div>
+  
+        <!-- Links de Navegação -->
+        <footer class="forgot-password-footer">
+          <div class="navigation-links">
+            <a routerLink="/login" class="back-link" tabindex="0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+              </svg>
+              Voltar para login
+            </a>
+            <span class="separator" aria-hidden="true">•</span>
+            <a routerLink="/cadastro" class="signup-link" tabindex="0">
+              Criar nova conta
+            </a>
+          </div>
+        </footer>
+      </main>
+    </div>
+  </div>
+  
