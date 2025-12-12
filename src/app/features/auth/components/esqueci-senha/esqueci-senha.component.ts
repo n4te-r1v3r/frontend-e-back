@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 // --NOVO--
 // Importações do Firebase Auth
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
+import { environment } from '../../../../../environments/environments';
 // --FIM DO NOVO--
 
 @Component({
@@ -49,7 +50,7 @@ export class EsqueciSenhaComponent implements OnDestroy {
         // Firebase Auth ActionCodeSettings para redirecionamento após a redefinição
         // Use o URL do seu localhost durante o desenvolvimento.
         const actionCodeSettings = {
-          url: 'http://localhost:4200/login', // Use o URL do seu ambiente local
+          url: environment.resetPasswordUrl,
           handleCodeInApp: true
         };
 
@@ -85,7 +86,7 @@ export class EsqueciSenhaComponent implements OnDestroy {
     try {
       // Reutiliza as mesmas configurações de ação
       const actionCodeSettings = {
-        url: 'http://localhost:4200/login', // Use o URL do seu ambiente local
+        url: environment.resetPasswordUrl,
         handleCodeInApp: true
       };
       await sendPasswordResetEmail(this.auth, this.email, actionCodeSettings);
