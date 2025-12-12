@@ -1,12 +1,13 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, Subject } from 'rxjs';
-import { tap, takeUntil } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { Observable, Subject, takeUntil } from 'rxjs';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 import { FirestoreService, Chamado, Asset } from '../../../services/firestore.service';
 
-type ViewMode = 'detail' | 'create';
+type ViewMode = 'list' | 'grid';
 type ToastType = 'success' | 'error' | 'info';
 
 @Component({
@@ -14,40 +15,53 @@ type ToastType = 'success' | 'error' | 'info';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './chamados.component.html',
-  styleUrl: './chamados.component.scss'
+  styleUrl: './chamados.component.scss',
+  animations: [
+    trigger('modalAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.9)' }),
+        animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ opacity: 1, transform: 'scale(1)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms cubic-bezier(0.4, 0, 0.2, 1)', style({ opacity: 0, transform: 'scale(0.9)' }))
+      ])
+    ]),
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('200ms ease-out', style({ opacity: 1 }))
+      ])
+    ])
+  ]
 })
 export class ChamadosComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
   private firestoreService = inject(FirestoreService);
   private destroy$ = new Subject<void>();
 
+  // Observables
   tickets$!: Observable<Chamado[]>;
   assets$!: Observable<Asset[]>;
-  private assetsSnapshot: Asset[] = [];
 
-  viewMode: ViewMode = 'detail';
+  // Estado da aplicação
+  viewMode: ViewMode = 'list';
   selectedTicket: Chamado | null = null;
+  showCreateModal = false;
 
+  // Formulário de novo chamado
   newTicketAssetId?: string;
   newTicketTitle = '';
   newTicketDescription = '';
-  newTicketPriority: Chamado['priority'] = 'Alta';
+  newTicketPriority: Chamado['priority'] = 'Média';
 
+  // Toast
   showToastFlag = false;
   toastMessage = '';
   toastType: ToastType = 'info';
   private toastTimeout?: ReturnType<typeof setTimeout>;
 
-  isGeneratingQR = false;
-
   ngOnInit(): void {
-    this.tickets$ = this.firestoreService.getChamados();
-    this.assets$ = this.firestoreService.getAssets().pipe(
-      tap(assets => this.assetsSnapshot = assets)
-    );
-
-    this.assets$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(); // mantém o snapshot atualizado
+    this.loadData();
   }
 
   ngOnDestroy(): void {
@@ -58,46 +72,66 @@ export class ChamadosComponent implements OnInit, OnDestroy {
     }
   }
 
-  trackTicket(index: number, ticket: Chamado) {
-    return ticket.id ?? index;
+  // === MÉTODOS DE DADOS ===
+  private loadData(): void {
+    this.tickets$ = this.firestoreService.getChamados();
+    this.assets$ = this.firestoreService.getAssets();
   }
 
-  trackAsset(index: number, asset: Asset) {
-    return asset.id ?? index;
+  trackTicket(index: number, ticket: Chamado): string {
+    return ticket.id ?? index.toString();
   }
 
-  selectTicket(ticket: Chamado) {
+  trackAsset(index: number, asset: Asset): string {
+    return asset.id ?? index.toString();
+  }
+
+  // === MÉTODOS DE VISUALIZAÇÃO ===
+  setViewMode(mode: ViewMode): void {
+    this.viewMode = mode;
+    this.announceAction(`Modo de visualização alterado para ${mode === 'list' ? 'lista' : 'grade'}`);
+  }
+
+  selectTicket(ticket: Chamado): void {
     this.selectedTicket = ticket;
-    this.viewMode = 'detail';
+    this.announceAction(`Chamado selecionado: ${ticket.title}`);
   }
 
-  openCreateTicketModal() {
-    this.resetNewTicketForm();
+  closeDetails(): void {
     this.selectedTicket = null;
-    this.viewMode = 'create';
+    this.announceAction('Detalhes fechados');
   }
 
-  closeCreateTicketModal() {
-    this.viewMode = 'detail';
+  // === MÉTODOS DO MODAL ===
+  openCreateModal(): void {
+    this.showCreateModal = true;
+    this.resetNewTicketForm();
+    this.announceAction('Modal de novo chamado aberto');
+    
+    // Trap focus no modal
+    setTimeout(() => {
+      const firstInput = document.querySelector('.modal-content input, .modal-content select') as HTMLElement;
+      firstInput?.focus();
+    }, 100);
   }
 
-  async saveNewTicket() {
-    if (!this.newTicketAssetId || !this.newTicketTitle.trim() || !this.newTicketDescription.trim()) {
-      this.showToast('Preencha todos os campos obrigatórios.', 'error');
-      return;
-    }
+  closeCreateModal(): void {
+    this.showCreateModal = false;
+    this.announceAction('Modal de novo chamado fechado');
+  }
 
-    const selectedAsset = this.assetsSnapshot.find(asset => asset.id === this.newTicketAssetId);
-    if (!selectedAsset) {
-      this.showToast('Ativo selecionado inválido.', 'error');
+  // === MÉTODOS DE CHAMADO ===
+  async saveNewTicket(): Promise<void> {
+    if (!this.isFormValid()) {
+      this.showToast('Preencha todos os campos obrigatórios', 'error');
       return;
     }
 
     const payload: Omit<Chamado, 'id' | 'createdAt'> = {
-      assetId: selectedAsset.id!,
-      assetName: selectedAsset.name,
-      authorId: 'helpdesk-operator',
-      authorName: 'HelpDesk',
+      assetId: this.newTicketAssetId!,
+      assetName: this.getAssetName(this.newTicketAssetId!),
+      authorId: 'current-user-id', // TODO: Pegar do serviço de autenticação
+      authorName: 'Usuário Atual', // TODO: Pegar do serviço de autenticação
       description: this.newTicketDescription.trim(),
       priority: this.newTicketPriority,
       status: 'Aberto',
@@ -107,70 +141,105 @@ export class ChamadosComponent implements OnInit, OnDestroy {
     try {
       await this.firestoreService.addChamado(payload);
       this.showToast('Chamado criado com sucesso!', 'success');
-      this.closeCreateTicketModal();
+      this.closeCreateModal();
       this.resetNewTicketForm();
     } catch (error) {
-      console.error('Erro ao salvar chamado:', error);
-      this.showToast('Não foi possível salvar o chamado.', 'error');
+      console.error('Erro ao criar chamado:', error);
+      this.showToast('Erro ao criar chamado', 'error');
     }
   }
 
-  async toggleStatus(ticket: Chamado) {
-    const updatedStatus = ticket.status === 'Resolvido' ? 'Aberto' : 'Resolvido';
+  async toggleStatus(ticket: Chamado): Promise<void> {
+    const newStatus = ticket.status === 'Resolvido' ? 'Aberto' : 'Resolvido';
     const updatedTicket: Chamado = {
       ...ticket,
-      status: updatedStatus,
-      resolvedAt: updatedStatus === 'Resolvido' ? new Date() : undefined
+      status: newStatus,
+      resolvedAt: newStatus === 'Resolvido' ? new Date() : undefined
     };
 
     try {
       await this.firestoreService.updateChamado(updatedTicket);
       this.showToast(
-        updatedStatus === 'Resolvido' ? 'Chamado marcado como resolvido.' : 'Chamado reaberto.',
+        newStatus === 'Resolvido' ? 'Chamado marcado como resolvido' : 'Chamado reaberto',
         'success'
       );
+      
+      // Atualizar ticket selecionado se for o mesmo
+      if (this.selectedTicket?.id === ticket.id) {
+        this.selectedTicket = updatedTicket;
+      }
     } catch (error) {
-      console.error('Erro ao atualizar status do chamado:', error);
-      this.showToast('Não foi possível atualizar o status.', 'error');
+      console.error('Erro ao atualizar status:', error);
+      this.showToast('Erro ao atualizar status', 'error');
     }
   }
 
-  async deleteSelectedTicket() {
-    if (!this.selectedTicket?.id) {
-      return;
-    }
+  async deleteTicket(ticket: Chamado): Promise<void> {
+    if (!ticket.id) return;
 
-    const confirmation = confirm('Deseja realmente excluir este chamado? Esta ação não pode ser desfeita.');
-    if (!confirmation) {
-      return;
-    }
+    const confirmation = confirm(`Deseja realmente excluir o chamado "${ticket.title}"?`);
+    if (!confirmation) return;
 
     try {
-      await this.firestoreService.deleteChamado(this.selectedTicket.id);
-      this.showToast('Chamado excluído com sucesso.', 'success');
-      this.selectedTicket = null;
+      await this.firestoreService.deleteChamado(ticket.id);
+      this.showToast('Chamado excluído com sucesso', 'success');
+      
+      // Fechar detalhes se for o ticket selecionado
+      if (this.selectedTicket?.id === ticket.id) {
+        this.closeDetails();
+      }
     } catch (error) {
       console.error('Erro ao excluir chamado:', error);
-      this.showToast('Não foi possível excluir o chamado.', 'error');
+      this.showToast('Erro ao excluir chamado', 'error');
     }
   }
 
-  generateQRCode(ticket: Chamado) {
-    this.isGeneratingQR = true;
-    setTimeout(() => {
-      this.isGeneratingQR = false;
-      this.showToast(`QR Code gerado para ${ticket.assetName}.`, 'info');
-    }, 800);
+  // === MÉTODOS AUXILIARES ===
+  isFormValid(): boolean {
+    return !!(
+      this.newTicketAssetId &&
+      this.newTicketTitle.trim() &&
+      this.newTicketDescription.trim() &&
+      this.newTicketPriority
+    );
   }
 
-  closeToast() {
-    this.showToastFlag = false;
-    if (this.toastTimeout) {
-      clearTimeout(this.toastTimeout);
-    }
+  private resetNewTicketForm(): void {
+    this.newTicketAssetId = undefined;
+    this.newTicketTitle = '';
+    this.newTicketDescription = '';
+    this.newTicketPriority = 'Média';
   }
 
-  private showToast(message: string, type: ToastType) {
+  private getAssetName(assetId: string): string {
+    // TODO: Implementar busca do nome do ativo
+    return 'Ativo';
+  }
+
+  getTicketAriaLabel(ticket: Chamado): string {
+    return `Chamado: ${ticket.title}, Prioridade: ${ticket.priority}, Status: ${ticket.status}`;
+  }
+
+  getTimeAgo(date: Date | undefined): string {
+    if (!date) return 'Data desconhecida';
+    
+    const now = new Date();
+    const ticketDate = new Date(date);
+    const diffMs = now.getTime() - ticketDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Agora mesmo';
+    if (diffMins < 60) return `${diffMins} min atrás`;
+    if (diffHours < 24) return `${diffHours}h atrás`;
+    if (diffDays < 7) return `${diffDays}d atrás`;
+    
+    return ticketDate.toLocaleDateString('pt-BR');
+  }
+
+  // === MÉTODOS DE TOAST ===
+  private showToast(message: string, type: ToastType): void {
     this.toastMessage = message;
     this.toastType = type;
     this.showToastFlag = true;
@@ -180,14 +249,25 @@ export class ChamadosComponent implements OnInit, OnDestroy {
     }
 
     this.toastTimeout = setTimeout(() => {
-      this.showToastFlag = false;
+      this.closeToast();
     }, 4000);
   }
 
-  private resetNewTicketForm() {
-    this.newTicketAssetId = undefined;
-    this.newTicketTitle = '';
-    this.newTicketDescription = '';
-    this.newTicketPriority = 'Alta';
+  closeToast(): void {
+    this.showToastFlag = false;
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+    }
+  }
+
+  // === MÉTODOS DE ACESSIBILIDADE ===
+  private announceAction(message: string): void {
+    const announcer = document.getElementById('status-announcements');
+    if (announcer) {
+      announcer.textContent = message;
+      setTimeout(() => {
+        announcer.textContent = '';
+      }, 1000);
+    }
   }
 }

@@ -1,252 +1,411 @@
-<!-- 
-    IMPORTANTE: Este arquivo HTML usa o "async pipe" para lidar com os Observables do Firebase.
-    
-    1. Lista de Chamados: *ngIf="tickets$ | async as ticketsList"
-    2. Formulário de Criação: *ngFor="let asset of assets$ | async"
--->
-<main class="min-h-screen bg-gray-50 flex flex-col antialiased">
-    
-  <!-- Header e Menu (Fixo no topo) -->
-  <header class="bg-white shadow-md p-4 sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-indigo-700 tracking-wider">HelpDesk App</h1>
-          <button (click)="openCreateTicketModal()" 
-                  class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 flex items-center space-x-2"
-                  aria-label="Abrir formulário de criação de novo chamado">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-              </svg>
-              <span>Novo Chamado</span>
-          </button>
+<div class="chamados-wrapper" role="main">
+  <!-- Header da tela de Chamados -->
+  <header class="chamados-header">
+    <div class="header-content">
+      <div class="page-info">
+        <h1 class="page-title">Chamados</h1>
+        <p class="page-subtitle">Gerenciamento de tickets e solicitações</p>
       </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" 
+                aria-label="Filtrar chamados"
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
+          </svg>
+          Filtros
+        </button>
+        <button class="btn btn-primary" 
+                aria-label="Criar novo chamado"
+                (click)="openCreateModal()" 
+                tabindex="0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+          </svg>
+          Novo Chamado
+        </button>
+      </div>
+    </div>
   </header>
 
-  <!-- Conteúdo Principal com Layout Responsivo -->
-  <div class="flex-grow max-w-7xl mx-auto w-full p-4 grid md:grid-cols-3 gap-6">
-
-      <!-- Coluna da Lista de Chamados (1/3 em desktop) -->
-      <section class="md:col-span-1 bg-white rounded-xl shadow-xl overflow-hidden h-full min-h-[400px]">
-          <h2 class="text-xl font-semibold p-4 bg-gray-100 text-gray-700 border-b border-gray-200">
-              Lista de Chamados
-          </h2>
-          
-          <!-- LISTA DE TICKETS: Usando o async pipe para ler tickets$ do Firebase -->
-          <div class="tickets-container overflow-y-auto" style="max-height: calc(100vh - 160px);">
-              
-              <div class="tickets-list p-2 space-y-2" role="list" 
-                   *ngIf="tickets$ | async as ticketsList; else noTickets">
-
-                  <!-- Itera sobre a lista desempacotada (ticketsList) -->
-                  <article class="ticket-card p-4 rounded-lg cursor-pointer transition duration-150 ease-in-out border-l-4" 
-                           *ngFor="let ticket of ticketsList; trackBy: trackTicket"
-                           role="listitem"
-                           tabindex="0"
-                           (click)="selectTicket(ticket)"
-                           [class.selected]="selectedTicket?.id === ticket.id"
-                           [ngClass]="{
-                               'bg-white hover:bg-indigo-50 border-indigo-500 shadow': selectedTicket?.id !== ticket.id,
-                               'bg-indigo-100 border-indigo-700 shadow-inner': selectedTicket?.id === ticket.id
-                           }">
-                      
-                      <div class="flex justify-between items-start">
-                          <h3 class="text-lg font-bold truncate" [title]="ticket.title">{{ ticket.title }}</h3>
-                          <span [ngClass]="{
-                              'bg-red-100 text-red-800': ticket.priority === 'Alta' || ticket.priority === 'Urgente',
-                              'bg-yellow-100 text-yellow-800': ticket.priority === 'Média',
-                              'bg-green-100 text-green-800': ticket.priority === 'Baixa'
-                          }" class="text-xs font-semibold px-2 py-0.5 rounded-full">
-                              {{ ticket.priority }}
-                          </span>
-                      </div>
-                      <p class="text-sm text-gray-600 mt-1 truncate">{{ ticket.description }}</p>
-                      <div class="flex justify-between items-end mt-2 text-xs text-gray-400">
-                          <p class="font-medium text-gray-500">{{ ticket.assetName }}</p>
-                          <span [ngClass]="{
-                              'text-blue-600': ticket.status === 'Aberto' || ticket.status === 'Em Progresso',
-                              'text-green-600': ticket.status === 'Resolvido' || ticket.status === 'Fechado',
-                              'text-yellow-600': ticket.status === 'Pendente'
-                          }" class="font-semibold">{{ ticket.status }}</span>
-                      </div>
-                  </article>
-
-              </div>
-              
-              <!-- Estado vazio -->
-              <ng-template #noTickets>
-                  <div class="text-center p-8 text-gray-500">
-                      <svg class="w-10 h-10 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                      <p class="font-semibold">Nenhum Chamado Encontrado</p>
-                      <p class="text-sm">Clique em "Novo Chamado" para começar.</p>
-                  </div>
-              </ng-template>
-
+  <!-- Conteúdo Principal -->
+  <div class="chamados-content">
+    <!-- Lista de Chamados -->
+    <section class="tickets-section" aria-labelledby="tickets-title">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="tickets-title" class="card-title">Lista de Chamados</h2>
+            <p class="card-subtitle" *ngIf="tickets$ | async as tickets">
+              {{ tickets.length }} chamados encontrados
+            </p>
           </div>
-      </section>
-
-      <!-- Coluna de Detalhes / Formulário (2/3 em desktop) -->
-      <section class="md:col-span-2 bg-white rounded-xl shadow-xl p-6 h-full min-h-[400px]" #ticketDetail>
-          
-          <ng-container *ngIf="viewMode === 'detail' && selectedTicket; else defaultView">
-              <!-- Visualização de Detalhes do Ticket Selecionado -->
-              <div class="flex justify-between items-start border-b pb-4 mb-4">
-                  <div>
-                      <h2 class="text-3xl font-extrabold text-gray-800 mb-1">{{ selectedTicket.title }}</h2>
-                      <span class="text-sm font-medium px-3 py-1 rounded-full"
-                            [ngClass]="{
-                              'bg-blue-100 text-blue-800': selectedTicket.status === 'Aberto' || selectedTicket.status === 'Em Progresso',
-                              'bg-green-100 text-green-800': selectedTicket.status === 'Resolvido' || selectedTicket.status === 'Fechado',
-                              'bg-yellow-100 text-yellow-800': selectedTicket.status === 'Pendente'
-                            }">
-                          Status: {{ selectedTicket.status }}
-                      </span>
+          <div class="header-actions">
+            <div class="view-options">
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'list'"
+                      (click)="setViewMode('list')"
+                      aria-label="Visualização em lista"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,5H21V7H3V5M3,11H21V13H3V11M3,17H21V19H3V17Z"/>
+                </svg>
+              </button>
+              <button class="view-toggle" 
+                      [class.active]="viewMode === 'grid'"
+                      (click)="setViewMode('grid')"
+                      aria-label="Visualização em grade"
+                      tabindex="0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </header>
+        
+        <div class="tickets-container" [class]="'view-' + viewMode">
+          <div class="tickets-list" *ngIf="tickets$ | async as ticketsList; else loadingTickets">
+            <ng-container *ngIf="ticketsList.length > 0; else noTickets">
+              <article class="ticket-card" 
+                       *ngFor="let ticket of ticketsList; trackBy: trackTicket"
+                       tabindex="0"
+                       [attr.aria-label]="getTicketAriaLabel(ticket)"
+                       (click)="selectTicket(ticket)"
+                       (keydown.enter)="selectTicket(ticket)"
+                       (keydown.space)="selectTicket(ticket)"
+                       [class.selected]="selectedTicket?.id === ticket.id"
+                       role="button">
+                
+                <!-- Indicador de prioridade -->
+                <div class="ticket-priority" 
+                     [class]="'priority-' + ticket.priority.toLowerCase()"
+                     [attr.aria-label]="'Prioridade: ' + ticket.priority">
+                </div>
+                
+                <!-- Conteúdo do ticket -->
+                <div class="ticket-content">
+                  <div class="ticket-header">
+                    <h3 class="ticket-title">{{ ticket.title }}</h3>
+                    <span class="ticket-time">{{ getTimeAgo(ticket.createdAt) }}</span>
                   </div>
-                  <div class="flex space-x-2">
-                       <button (click)="toggleStatus(selectedTicket)" 
-                              class="p-2 rounded-full text-white transition duration-200"
-                              [ngClass]="{'bg-green-500 hover:bg-green-600': selectedTicket.status !== 'Resolvido', 'bg-yellow-500 hover:bg-yellow-600': selectedTicket.status === 'Resolvido'}"
-                              [title]="selectedTicket.status !== 'Resolvido' ? 'Marcar como Resolvido' : 'Reabrir Chamado'"
-                              aria-label="Marcar como Resolvido">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 14.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                          </svg>
-                      </button>
-                      <button (click)="generateQRCode(selectedTicket)" 
-                              [disabled]="isGeneratingQR"
-                              class="p-2 rounded-full bg-gray-500 hover:bg-gray-600 text-white transition duration-200"
-                              title="Gerar QR Code">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zM13 13a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1h-3z" clip-rule="evenodd" />
-                          </svg>
-                      </button>
-                      <button (click)="deleteSelectedTicket()" 
-                              class="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition duration-200"
-                              title="Excluir Chamado"
-                              aria-label="Excluir Chamado">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                          </svg>
-                      </button>
-                  </div>
-              </div>
-
-              <div class="grid md:grid-cols-2 gap-4 text-sm text-gray-700 mb-6">
-                  <div class="detail-group">
-                      <p class="font-semibold text-gray-500">Autor:</p>
-                      <p>{{ selectedTicket.authorName }} (ID: {{ selectedTicket.authorId }})</p>
-                  </div>
-                  <div class="detail-group">
-                      <p class="font-semibold text-gray-500">Prioridade:</p>
-                      <span [ngClass]="{
-                          'text-red-600': selectedTicket.priority === 'Alta' || selectedTicket.priority === 'Urgente',
-                          'text-yellow-600': selectedTicket.priority === 'Média',
-                          'text-green-600': selectedTicket.priority === 'Baixa'
-                      }" class="font-bold">{{ selectedTicket.priority }}</span>
-                  </div>
-                  <div class="detail-group">
-                      <p class="font-semibold text-gray-500">Ativo Relacionado:</p>
-                      <p>{{ selectedTicket.assetName }} (ID: {{ selectedTicket.assetId }})</p>
-                  </div>
-                  <div class="detail-group">
-                      <p class="font-semibold text-gray-500">Criado em:</p>
-                      <p>{{ selectedTicket.createdAt | date:'short' }}</p>
-                  </div>
-                  <div class="detail-group" *ngIf="selectedTicket.resolvedAt">
-                      <p class="font-semibold text-gray-500">Resolvido em:</p>
-                      <p>{{ selectedTicket.resolvedAt | date:'short' }}</p>
-                  </div>
-              </div>
-
-              <div class="detail-description bg-gray-50 p-4 rounded-lg border">
-                  <h3 class="font-semibold text-lg text-gray-800 mb-2">Descrição Detalhada</h3>
-                  <p class="whitespace-pre-wrap text-gray-700">{{ selectedTicket.description }}</p>
-              </div>
-              
-          </ng-container>
-
-          <!-- Formulário de Criação de Novo Chamado -->
-          <ng-container *ngIf="viewMode === 'create'">
-              <h2 class="text-2xl font-bold text-gray-800 border-b pb-3 mb-4">Criar Novo Chamado</h2>
-
-              <form (ngSubmit)="saveNewTicket()" class="space-y-4">
                   
-                  <div>
-                      <label for="asset-select" class="block text-sm font-medium text-gray-700">Ativo Relacionado</label>
-                      <select id="asset-select" name="assetId" [(ngModel)]="newTicketAssetId" required
-                              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                          <option [ngValue]="undefined" disabled>Selecione um ativo...</option>
-                          <!-- Itera sobre o Observable de assets usando async pipe -->
-                          <option *ngFor="let asset of assets$ | async; trackBy: trackAsset" [ngValue]="asset.id">
-                              {{ asset.name }} ({{ asset.serialNumber }})
-                          </option>
-                      </select>
+                  <p class="ticket-description" *ngIf="viewMode === 'list'">
+                    {{ ticket.description }}
+                  </p>
+                  
+                  <div class="ticket-meta">
+                    <div class="meta-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1Z"/>
+                      </svg>
+                      <span>{{ ticket.assetName }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                      </svg>
+                      <span>{{ ticket.authorName }}</span>
+                    </div>
                   </div>
-
-                  <div>
-                      <label for="title" class="block text-sm font-medium text-gray-700">Título do Chamado</label>
-                      <input id="title" name="title" type="text" [(ngModel)]="newTicketTitle" required
-                             class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                
+                <!-- Status -->
+                <div class="ticket-footer">
+              <span class="status-badge" 
+                        [class]="'status-' + (ticket.status ? ticket.status.toLowerCase().replace(' ', '-') : 'desconhecido')"
+                        [attr.aria-label]="'Status: ' + (ticket.status || 'Desconhecido')">
+                    <span class="status-indicator"></span>
+                    {{ ticket.status }}
+                  </span>
+                  
+                  <div class="ticket-actions">
+                    <button class="action-btn" 
+                            [attr.aria-label]="'Alterar status do chamado ' + ticket.title"
+                            (click)="$event.stopPropagation(); toggleStatus(ticket)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+                      </svg>
+                    </button>
+                    <button class="action-btn" 
+                            [attr.aria-label]="'Excluir chamado ' + ticket.title"
+                            (click)="$event.stopPropagation(); deleteTicket(ticket)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                      </svg>
+                    </button>
                   </div>
-
-                  <div>
-                      <label for="description" class="block text-sm font-medium text-gray-700">Descrição Detalhada</label>
-                      <textarea id="description" name="description" rows="4" [(ngModel)]="newTicketDescription" required
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-                  </div>
-
-                  <div>
-                      <label for="priority" class="block text-sm font-medium text-gray-700">Prioridade</label>
-                      <select id="priority" name="priority" [(ngModel)]="newTicketPriority"
-                              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                          <option value="Urgente">Urgente</option>
-                          <option value="Alta">Alta</option>
-                          <option value="Média">Média</option>
-                          <option value="Baixa">Baixa</option>
-                      </select>
-                  </div>
-
-                  <div class="flex justify-end space-x-3 pt-4">
-                      <button type="button" (click)="closeCreateTicketModal()" 
-                              class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                          Cancelar
-                      </button>
-                      <button type="submit" 
-                              class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                          Salvar Chamado
-                      </button>
-                  </div>
-              </form>
-          </ng-container>
-
-          <!-- Visualização Padrão (Sem Chamado Selecionado) -->
-          <ng-template #defaultView>
-              <div class="h-full flex flex-col items-center justify-center text-center text-gray-500">
-                  <svg class="w-16 h-16 mb-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  <p class="text-xl font-semibold">Selecione um chamado na lista</p>
-                  <p class="text-sm">Ou crie um novo para visualizar os detalhes e o histórico.</p>
-              </div>
+                </div>
+              </article>
+            </ng-container>
+          </div>
+          
+          <!-- Estado de carregamento -->
+          <ng-template #loadingTickets>
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Carregando chamados...</p>
+            </div>
           </ng-template>
-
-      </section>
-  </div>
-
-  <!-- Toast de Notificação -->
-  <div *ngIf="showToastFlag" class="fixed bottom-4 right-4 z-50">
-      <div class="rounded-lg p-4 shadow-xl flex items-center space-x-3"
-           [ngClass]="{
-               'bg-green-500 text-white': toastType === 'success',
-               'bg-red-500 text-white': toastType === 'error',
-               'bg-blue-500 text-white': toastType === 'info'
-           }"
-           role="alert">
-          <svg *ngIf="toastType === 'success'" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <svg *ngIf="toastType === 'error'" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <svg *ngIf="toastType === 'info'" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span class="font-medium">{{ toastMessage }}</span>
-          <button (click)="closeToast()" class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg focus:ring-2 focus:ring-offset-2"
-                  [ngClass]="{'hover:bg-green-400 focus:ring-green-400': toastType === 'success', 'hover:bg-red-400 focus:ring-red-400': toastType === 'error', 'hover:bg-blue-400 focus:ring-blue-400': toastType === 'info'}"
-                  aria-label="Fechar notificação">
-              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-          </button>
+          
+          <!-- Estado vazio -->
+          <ng-template #noTickets>
+            <div class="empty-state" role="status">
+              <div class="empty-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,5V7H15V5H19M9,5V11H5V5H9M19,13V19H15V13H19M9,17V19H5V17H9M21,3H13V9H21V3M11,3H3V13H11V3M21,11H13V21H21V11M11,15H3V21H11V15Z"/>
+                </svg>
+              </div>
+              <h3 class="empty-title">Nenhum chamado encontrado</h3>
+              <p class="empty-description">
+                Não há chamados cadastrados no momento. 
+                Clique em "Novo Chamado" para criar um.
+              </p>
+              <button class="btn btn-primary" (click)="openCreateModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                </svg>
+                Criar Primeiro Chamado
+              </button>
+            </div>
+          </ng-template>
+        </div>
       </div>
+    </section>
+
+    <!-- Detalhes do Chamado -->
+    <aside class="details-section" aria-labelledby="details-title" *ngIf="selectedTicket as ticket">
+      <div class="section-card">
+        <header class="card-header">
+          <div class="header-left">
+            <h2 id="details-title" class="card-title">Detalhes do Chamado</h2>
+            <p class="card-subtitle">{{ ticket.title }}</p>
+          </div>
+          <div class="header-actions">
+            <button class="action-button" 
+                    aria-label="Fechar detalhes"
+                    (click)="closeDetails()" 
+                    tabindex="0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        
+        <div class="details-content">
+          <!-- Informações principais -->
+          <div class="info-section">
+            <h3 class="section-title">Informações Gerais</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="status-badge" 
+                      [class]="'status-' + (ticket.status ? ticket.status.toLowerCase().replace(' ', '-') : 'desconhecido')">
+                  <span class="status-indicator"></span>
+                  {{ ticket.status || 'Desconhecido' }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Prioridade:</span>
+                <span class="priority-badge" 
+                      [class]="'priority-' + selectedTicket.priority.toLowerCase()">
+                  {{ selectedTicket.priority }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ativo:</span>
+                <span class="info-value">{{ ticket.assetName }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Autor:</span>
+                <span class="info-value">{{ ticket.authorName }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Criado em:</span>
+                <span class="info-value">{{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="info-item" *ngIf="ticket.resolvedAt">
+                <span class="info-label">Resolvido em:</span>
+                <span class="info-value">{{ ticket.resolvedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Descrição -->
+          <div class="description-section">
+            <h3 class="section-title">Descrição</h3>
+            <p class="description-text">{{ ticket.description }}</p>
+          </div>
+          
+          <!-- Ações -->
+          <div class="actions-section">
+            <h3 class="section-title">Ações</h3>
+            <div class="actions-grid">
+              <button class="action-card" 
+                      (click)="toggleStatus(ticket)"
+                      [attr.aria-label]="ticket.status === 'Resolvido' ? 'Reabrir chamado' : 'Resolver chamado'">
+                <div class="action-icon" 
+                     [class.resolved]="ticket.status === 'Resolvido'">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+                  </svg>
+                </div>
+                <span class="action-title">
+                  {{ ticket.status === 'Resolvido' ? 'Reabrir' : 'Resolver' }}
+                </span>
+              </button>
+              
+              <button class="action-card" 
+                      aria-label="Excluir chamado"
+                      (click)="deleteTicket(ticket)">
+                <div class="action-icon delete">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                  </svg>
+                </div>
+                <span class="action-title">Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Placeholder quando nenhum chamado está selecionado -->
+    <aside class="details-placeholder" *ngIf="!selectedTicket" role="complementary">
+      <div class="placeholder-content">
+        <div class="placeholder-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,5V7H15V5H19M9,5V11H5V5H9M19,13V19H15V13H19M9,17V19H5V17H9M21,3H13V9H21V3M11,3H3V13H11V3M21,11H13V21H21V11M11,15H3V21H11V15Z"/>
+          </svg>
+        </div>
+        <h3 class="placeholder-title">Selecione um Chamado</h3>
+        <p class="placeholder-description">
+          Escolha um chamado da lista para visualizar os detalhes completos.
+        </p>
+      </div>
+    </aside>
   </div>
-</main>
+
+  <!-- Modal de Criação de Chamado -->
+  <div class="modal-overlay" 
+       *ngIf="showCreateModal" 
+       @fadeIn
+       (click)="closeCreateModal()"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="modal-title">
+    <div class="modal-content" 
+         @modalAnimation
+         (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <h2 id="modal-title" class="modal-title">Criar Novo Chamado</h2>
+        <button class="modal-close" 
+                (click)="closeCreateModal()"
+                aria-label="Fechar modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+          </svg>
+        </button>
+      </header>
+      
+      <form class="modal-body" (ngSubmit)="saveNewTicket()">
+        <div class="form-group">
+          <label for="asset-select" class="form-label required">Ativo Relacionado</label>
+          <select id="asset-select" 
+                  name="assetId" 
+                  [(ngModel)]="newTicketAssetId" 
+                  class="form-select"
+                  required>
+            <option [ngValue]="undefined" disabled>Selecione um ativo...</option>
+            <option *ngFor="let asset of assets$ | async; trackBy: trackAsset" 
+                    [ngValue]="asset.id">
+              {{ asset.name }} ({{ asset.serialNumber }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="title" class="form-label required">Título do Chamado</label>
+          <input id="title" 
+                 name="title" 
+                 type="text" 
+                 [(ngModel)]="newTicketTitle" 
+                 class="form-input"
+                 placeholder="Ex: Problema no monitor"
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label for="description" class="form-label required">Descrição Detalhada</label>
+          <textarea id="description" 
+                    name="description" 
+                    rows="4" 
+                    [(ngModel)]="newTicketDescription" 
+                    class="form-textarea"
+                    placeholder="Descreva o problema em detalhes..."
+                    required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="priority" class="form-label required">Prioridade</label>
+          <select id="priority" 
+                  name="priority" 
+                  [(ngModel)]="newTicketPriority"
+                  class="form-select">
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+            <option value="Urgente">Urgente</option>
+          </select>
+        </div>
+      </form>
+      
+      <footer class="modal-footer">
+        <button type="button" 
+                class="btn btn-secondary" 
+                (click)="closeCreateModal()">
+          Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                (click)="saveNewTicket()"
+                [disabled]="!isFormValid()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+          </svg>
+          Criar Chamado
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Toast de notificações -->
+  <div class="toast-container" aria-live="polite" aria-atomic="true">
+    <div class="toast" 
+         *ngIf="showToastFlag" 
+         [class]="'toast-' + toastType"
+         role="alert">
+      <div class="toast-content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'success'">
+          <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" *ngIf="toastType === 'error'">
+          <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+        </svg>
+        <span>{{ toastMessage }}</span>
+      </div>
+      <button class="toast-close" 
+              (click)="closeToast()" 
+              aria-label="Fechar notificação">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Screen Reader Only -->
+<div class="sr-only" aria-live="polite" id="status-announcements"></div>

@@ -4,7 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
-interface ReportStat {
+// NOVO: Importação do Serviço (Ajuste o caminho se necessário)
+import { ReportService } from '../services/report.services'; 
+
+// Interfaces (É crucial que estas interfaces sejam EXPORTADAS para serem usadas pelo serviço)
+export interface ReportStat {
   type: string;
   label: string;
   value: number;
@@ -15,12 +19,12 @@ interface ReportStat {
   };
 }
 
-interface ReportData {
+export interface ReportData {
   id: string;
   title?: string;
   name?: string;
   status: string;
-  date: Date;
+  date: Date | { toDate: () => Date }; // Suporta Date e Firebase Timestamp
   responsible: string;
   department: string;
   type: string;
@@ -28,13 +32,13 @@ interface ReportData {
   [key: string]: any;
 }
 
-interface TableColumn {
+export interface TableColumn {
   key: string;
   label: string;
   sortable: boolean;
 }
 
-interface ExportSettings {
+export interface ExportSettings {
   includeHeaders: boolean;
   includeFilters: boolean;
 }
@@ -52,8 +56,10 @@ type SortDirection = 'asc' | 'desc' | null;
   styleUrl: './relatorios.component.scss'
 })
 export class RelatoriosComponent implements OnInit, OnDestroy {
+  // Injeções
   private router = inject(Router);
   private datePipe = inject(DatePipe);
+  private reportService = inject(ReportService); // INJEÇÃO DO SERVIÇO
   private destroy$ = new Subject<void>();
 
   // Estado da aplicação
@@ -64,8 +70,8 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
   selectedDepartment = 'all';
   
   // Ordenação
-  sortColumn = '';
-  sortDirection: SortDirection = null;
+  sortColumn = 'date'; // Padrão
+  sortDirection: SortDirection = 'desc';
   
   // Toast notifications
   toastMessage = '';
@@ -88,90 +94,15 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
     { key: 'department', label: 'Departamento', sortable: true }
   ];
 
-  // Estatísticas do relatório
-  reportStats: ReportStat[] = [
-    {
-      type: 'total',
-      label: 'Total de Registros',
-      value: 1247,
-      trend: { type: 'up', value: '12', suffix: '%' }
-    },
-    {
-      type: 'active',
-      label: 'Ativos',
-      value: 892,
-      trend: { type: 'up', value: '8', suffix: '%' }
-    },
-    {
-      type: 'pending',
-      label: 'Pendentes',
-      value: 234,
-      trend: { type: 'down', value: '5', suffix: '%' }
-    },
-    {
-      type: 'completed',
-      label: 'Concluídos',
-      value: 121,
-      trend: { type: 'up', value: '15', suffix: '%' }
-    }
-  ];
+  // Estatísticas do relatório (Inicializados vazios, preenchidos pelo serviço)
+  reportStats: ReportStat[] = [];
 
-  // Dados do relatório (simulados)
-  reportData: ReportData[] = [
-    {
-      id: '001',
-      title: 'Problema no monitor Dell',
-      status: 'Aberto',
-      date: new Date('2024-10-08T09:30:00'),
-      responsible: 'Ana Silva',
-      department: 'TI',
-      type: 'Chamado',
-      priority: 'Alta'
-    },
-    {
-      id: '002',
-      title: 'Troca de teclado mecânico',
-      status: 'Fechado',
-      date: new Date('2024-10-07T14:20:00'),
-      responsible: 'João Carlos',
-      department: 'TI',
-      type: 'Chamado',
-      priority: 'Baixa'
-    },
-    {
-      id: '003',
-      title: 'Manutenção preventiva impressora',
-      status: 'Em Andamento',
-      date: new Date('2024-10-09T11:15:00'),
-      responsible: 'Maria Santos',
-      department: 'Operações',
-      type: 'Manutenção',
-      priority: 'Média'
-    },
-    {
-      id: '004',
-      title: 'Instalação de software contábil',
-      status: 'Pendente',
-      date: new Date('2024-10-06T16:45:00'),
-      responsible: 'Pedro Oliveira',
-      department: 'Financeiro',
-      type: 'Instalação',
-      priority: 'Alta'
-    },
-    {
-      id: '005',
-      title: 'Backup do servidor principal',
-      status: 'Concluído',
-      date: new Date('2024-10-05T08:00:00'),
-      responsible: 'Carlos Silva',
-      department: 'TI',
-      type: 'Backup',
-      priority: 'Alta'
-    }
-  ];
+  // Dados do relatório (Inicializados vazios, preenchidos pelo serviço)
+  reportData: ReportData[] = [];
 
   ngOnInit() {
-    this.loadReportData();
+    this.updateTableColumns(); // Garante as colunas corretas ao iniciar
+    this.applyFilters(); // Carrega os dados reais do Firebase ao iniciar
     this.setupKeyboardShortcuts();
   }
 
@@ -226,13 +157,17 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
     this.selectedReportType = 'tickets';
     this.selectedStatus = 'all';
     this.selectedDepartment = 'all';
+    this.updateTableColumns();
     this.applyFilters();
     this.showToast('Filtros resetados', 'success');
   }
 
+  /**
+   * Ponto de entrada para aplicar filtros e buscar dados.
+   */
   applyFilters() {
     this.announceAction('Aplicando filtros ao relatório');
-    this.loadReportData();
+    this.loadReportData(); // Chama o método que busca os dados no Firebase
     this.showToast('Filtros aplicados com sucesso', 'success');
   }
 
@@ -245,16 +180,17 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
   // === MÉTODOS DE ORDENAÇÃO ===
   sortBy(column: string) {
     if (this.sortColumn === column) {
+      // Alterna entre asc, desc e null (retorna à ordem de carregamento do Firebase)
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : this.sortDirection === 'desc' ? null : 'asc';
     } else {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
 
-    if (this.sortDirection) {
+    if (this.sortDirection && this.reportData.length > 0) {
       this.reportData.sort((a, b) => {
-        const aValue = this.getColumnValue(a, column);
-        const bValue = this.getColumnValue(b, column);
+        const aValue = this.getRawValue(a, column);
+        const bValue = this.getRawValue(b, column);
         
         let comparison = 0;
         if (aValue > bValue) comparison = 1;
@@ -263,10 +199,24 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
         return this.sortDirection === 'desc' ? -comparison : comparison;
       });
     } else {
-      this.loadReportData(); // Recarregar dados na ordem original
+      // Se for null, recarrega para buscar a ordem original do Firebase
+      if (this.reportData.length > 0) {
+        this.loadReportData(); 
+      }
     }
 
     this.announceAction(`Dados ordenados por ${column} ${this.getSortDirectionLabel()}`);
+  }
+  
+  // Auxiliar para obter o valor cru (Date ou string) para comparação na ordenação
+  private getRawValue(item: ReportData, column: string): any {
+      let value = item[column];
+      
+      // Converte Timestamp para Date para ordenação correta
+      if (value && typeof value.toDate === 'function') {
+          return value.toDate();
+      }
+      return value;
   }
 
   getSortDirection(column: string): string {
@@ -276,7 +226,37 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
     return 'none';
   }
 
-  // === MÉTODOS DE DADOS ===
+  // === MÉTODOS DE DADOS E FIREBASE ===
+
+  /**
+   * Busca dados do Firebase através do serviço, aplica filtros e calcula estatísticas.
+   */
+  private loadReportData() {
+    const { selectedReportType, selectedDateRange, selectedStatus, selectedDepartment } = this;
+
+    this.reportService.getReportData(selectedReportType, selectedDateRange, selectedStatus, selectedDepartment)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.reportData = data;
+          
+          // Recalcula as estatísticas com os novos dados
+          this.reportStats = this.reportService.calculateReportStats(data);
+
+          // Re-aplica a ordenação nos dados recém-carregados
+          this.sortBy(this.sortColumn); 
+          
+          this.announceAction(`Relatório carregado: ${data.length} registros`);
+        },
+        error: (err) => {
+          console.error('Erro ao carregar dados do Firebase:', err);
+          this.showToast('Erro ao carregar relatório. Verifique sua conexão e permissões.', 'error');
+          this.reportData = [];
+          this.reportStats = [];
+        }
+      });
+  }
+
   selectItem(item: ReportData) {
     this.announceAction(`Item selecionado: ${item.title || item.name || item.id}`);
     this.router.navigate(['/relatorios', item.id]);
@@ -288,14 +268,26 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
     this.showToast('Estatísticas atualizadas', 'success');
   }
 
+  /**
+   * Formata o valor da coluna, lidando com Timestamps do Firebase.
+   */
   getColumnValue(item: ReportData, column: string): any {
+    let value = item[column];
+    
     if (column === 'date') {
-      return this.datePipe.transform(item[column], 'dd/MM/yyyy HH:mm');
+      // 1. Converte Timestamp do Firebase para Date
+      if (value && typeof value.toDate === 'function') {
+          value = value.toDate();
+      }
+      // 2. Formata a data (se for Date)
+      if (value instanceof Date) {
+        return this.datePipe.transform(value, 'dd/MM/yyyy HH:mm');
+      }
     }
-    return item[column] || '-';
+    return value || '-';
   }
 
-  // === MÉTODOS DE EXPORTAÇÃO ===
+  // === MÉTODOS DE EXPORTAÇÃO (Simulações mantidas) ===
   exportToPDF() {
     this.announceAction('Exportando relatório para PDF');
     this.simulateExport('PDF');
@@ -317,7 +309,11 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
   }
 
   private simulateExport(format: string) {
-    // Simular exportação
+    if (this.reportData.length === 0) {
+      this.showToast('Nenhum dado para exportar.', 'error');
+      return;
+    }
+
     setTimeout(() => {
       this.showToast(`Relatório exportado para ${format} com sucesso`, 'success');
     }, 1500);
@@ -325,7 +321,6 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
 
   // === MÉTODOS AUXILIARES ===
   private updateTableColumns() {
-    // Atualizar colunas baseado no tipo de relatório
     switch (this.selectedReportType) {
       case 'tickets':
         this.tableColumns = [
@@ -356,11 +351,6 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
           { key: 'responsible', label: 'Responsável', sortable: true }
         ];
     }
-  }
-
-  private loadReportData() {
-    // Simular carregamento de dados baseado nos filtros
-    this.announceAction(`Relatório carregado: ${this.reportData.length} registros`);
   }
 
   private setupKeyboardShortcuts() {
@@ -415,8 +405,8 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
   private getStatusLabel(): string {
     const labels: { [key: string]: string } = {
       'all': 'Todos',
-      'active': 'Ativo',
-      'inactive': 'Inativo',
+      'active': 'Aberto',
+      'inactive': 'Fechado',
       'pending': 'Pendente',
       'completed': 'Concluído'
     };
@@ -442,11 +432,11 @@ export class RelatoriosComponent implements OnInit, OnDestroy {
 
   // === MÉTODOS DE TEMPLATE ===
   getCardColumns(): TableColumn[] {
-    return this.tableColumns.slice(1, 4); // Mostrar apenas algumas colunas nos cards
+    return this.tableColumns.slice(1, 4); 
   }
 
   getRowAriaLabel(item: ReportData): string {
-    return `${item.title || item.name || item.id}, Status: ${item.status}, Data: ${this.datePipe.transform(item.date, 'dd/MM/yyyy')}`;
+    return `${item.title || item.name || item.id}, Status: ${item.status}, Data: ${this.getColumnValue(item, 'date')}`;
   }
 
   getCardAriaLabel(item: ReportData): string {
