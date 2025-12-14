@@ -528,13 +528,175 @@ $details-section-width: 400px;
 
 .info-section,
 .description-section,
-.actions-section {
+.actions-section,
+.qr-section { // Adiciona .qr-section aqui
   margin-bottom: var(--spacing-2xl);
   
   &:last-child {
     margin-bottom: 0;
   }
 }
+
+// === NOVAS REGRAS DE QR CODE INSERIDAS ===
+.qr-section {
+  // Já incluído no grupo acima
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.qr-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--tertiary-bg) 0%, var(--secondary-bg) 100%);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  min-height: 280px;
+  transition: var(--transition-normal);
+  
+  &:hover {
+    border-color: var(--accent-blue);
+    background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--tertiary-bg) 100%);
+  }
+  
+  .qr-canvas {
+    max-width: 200px;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: white;
+    padding: var(--spacing-sm);
+  }
+  
+  .qr-helper-text {
+    margin-top: var(--spacing-md);
+    font-size: 12px;
+    color: var(--secondary-text);
+    text-align: center;
+  }
+}
+
+.qr-info {
+  background-color: var(--tertiary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  
+  .qr-info-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-text);
+    margin: 0 0 var(--spacing-md) 0;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .qr-info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .qr-info-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 12px;
+    color: var(--primary-text);
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+    
+    &:hover {
+      background-color: var(--hover-bg);
+    }
+    
+    svg {
+      color: var(--accent-blue);
+      flex-shrink: 0;
+    }
+    
+    span {
+      flex: 1;
+    }
+  }
+}
+
+.qr-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.qr-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background-color: var(--tertiary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  color: var(--primary-text);
+  font-size: 12px;
+  font-weight: 500;
+  
+  &:hover, &:focus {
+    border-color: var(--accent-blue);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  
+  &:focus {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  svg {
+    transition: var(--transition-normal);
+  }
+  
+  &.download {
+    &:hover svg {
+      color: var(--accent-blue);
+      animation: downloadBounce 0.6s ease-in-out;
+    }
+  }
+  
+  &.print {
+    &:hover svg {
+      color: var(--success-color);
+    }
+  }
+  
+  &.copy {
+    &:hover svg {
+      color: var(--warning-color);
+    }
+  }
+}
+
+@keyframes downloadBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+// === FIM DAS NOVAS REGRAS DE QR CODE ===
 
 .info-grid {
   display: flex;
@@ -986,7 +1148,7 @@ $details-section-width: 400px;
     }
   }
   
-  .actions-grid {
+  .actions-grid, .qr-actions { // Adicionado .qr-actions
     grid-template-columns: 1fr;
   }
   
@@ -1001,7 +1163,9 @@ $details-section-width: 400px;
   .section-card,
   .ticket-card,
   .action-card,
-  .modal-content {
+  .modal-content,
+  .qr-action-btn, // Adicionado .qr-action-btn
+  .qr-info { // Adicionado .qr-info
     border-width: 2px;
   }
   
@@ -1014,7 +1178,8 @@ $details-section-width: 400px;
 // === REDUÇÃO DE MOVIMENTO ===
 @media (prefers-reduced-motion: reduce) {
   .ticket-card,
-  .action-card {
+  .action-card,
+  .qr-action-btn { // Adicionado .qr-action-btn
     transform: none !important;
   }
   

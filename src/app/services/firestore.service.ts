@@ -11,7 +11,8 @@ import {
   query,
   orderBy,
   limit,
-  Timestamp
+  Timestamp,
+  where
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -247,5 +248,66 @@ export class FirestoreService {
   deleteChamado(id: string): Promise<void> {
     const chamadoDocRef = doc(this.chamadosCollection, id);
     return deleteDoc(chamadoDocRef);
+  }
+  
+  // --- MÉTODO ADICIONADO PARA RELATÓRIOS E FILTROS ---
+  
+  /**
+   * Obtém chamados filtrados por status, data de início, data de fim e prioridade.
+   * @param status O status do chamado a ser filtrado (ex: 'Aberto'). Opcional.
+   * @param dateFrom A data mínima de criação (createdAt) do chamado. Opcional.
+   * @param dateTo A data máxima de criação (createdAt) do chamado. Opcional.
+   * @param priority A prioridade do chamado a ser filtrado. Opcional.
+   */
+  getChamadosFiltrados(
+    status?: string, 
+    dateFrom?: Date, 
+    dateTo?: Date, 
+    priority?: string
+  ): Observable<Chamado[]> {
+    
+    let queryConstraints: any[] = [];
+    
+    // 1. Filtro por Status
+    if (status) {
+      queryConstraints.push(where('status', '==', status));
+    }
+
+    // 2. Filtro por Prioridade
+    if (priority) {
+      queryConstraints.push(where('priority', '==', priority));
+    }
+
+    // 3. Filtro por Data de Início (createdAt >= dateFrom)
+    if (dateFrom) {
+      queryConstraints.push(where('createdAt', '>=', Timestamp.fromDate(dateFrom)));
+    }
+
+    // 4. Filtro por Data de Fim (createdAt <= dateTo)
+    if (dateTo) {
+      // Adiciona 24h - 1ms para incluir o dia inteiro na busca do Firestore
+      const dateToEOD = new Date(dateTo.getTime());
+      dateToEOD.setHours(23, 59, 59, 999); 
+      queryConstraints.push(where('createdAt', '<=', Timestamp.fromDate(dateToEOD)));
+    }
+    
+    // Ordenação padrão e aplicação das constraints
+    queryConstraints.push(orderBy('createdAt', 'desc'));
+
+    const q = query(this.chamadosCollection, ...queryConstraints);
+
+    return collectionData(q, { idField: 'id' })
+      .pipe(
+        map(chamados => chamados.map(chamado => {
+          const convertedChamado = this.convertTimestampsToDates<any>(chamado);
+          
+          // Mantém a lógica de mapeamento 'titulo' -> 'title'
+          if (convertedChamado.titulo !== undefined) {
+            convertedChamado.title = convertedChamado.titulo;
+            delete convertedChamado.titulo;
+          }
+          return convertedChamado as Chamado;
+        }))
+      );
   }
 }

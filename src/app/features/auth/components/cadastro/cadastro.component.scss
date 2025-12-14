@@ -237,7 +237,7 @@ $shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
   
   // Fundo e bordas escuras garantidas
-  background-color: var(--color-background-light); 
+  background-color: var(--color-background-dark); 
   border: 2px solid var(--color-accent-blue); 
   border-top: none;
   border-bottom-left-radius: 6px;
@@ -276,8 +276,9 @@ $shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
   @extend .form-input; 
   appearance: none;
   cursor: pointer;
+  background-color: var(--color-background-dark) !important; // força fundo escuro no dropdown nativo
   background-image: none;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary) !important;
   padding-right: 44px;
 
   &::-ms-expand {
@@ -286,19 +287,20 @@ $shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
 
   // Isso não funcionará na maioria dos navegadores, mas mantemos por compatibilidade:
   option {
-    background-color: var(--color-background-dark); 
-    color: var(--color-text-primary);
+    // Muitos navegadores ignoram fundo customizado no dropdown nativo; garanta contraste
+    background-color: #e9edf3 !important; // fundo claro para contrastar com texto escuro
+    color: #0c1b2a !important;            // texto escuro para não sumir em fundo claro
     padding: 8px 12px;
     
     &:disabled {
-      color: var(--color-text-secondary);
+      color: #607086;
       opacity: 0.7;
     }
     
     &:checked,
     &:hover {
-      background-color: var(--color-accent-blue);
-      color: white;
+      background-color: var(--color-accent-blue) !important;
+      color: white !important;
     }
   }
 }
@@ -404,7 +406,8 @@ $shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
   .checkbox-custom {
     width: 18px;
     height: 18px;
-    border: 2px solid var(--color-border);
+    border: 2px solid #000; // borda preta para contraste máximo
+    background-color: #fff; // fundo branco bem visível
     border-radius: 3px;
     margin-right: 10px;
     margin-top: 1px;
